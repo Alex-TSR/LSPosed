@@ -122,7 +122,12 @@ public final class ModuleUtil {
         return info.metaData != null && info.metaData.containsKey("xposedminversion");
     }
 
+    public String userInfotoString(UserInfo userInfo) {
+        return "UserInfo{" + userInfo.id + ":" + userInfo.name + ":" + Integer.toHexString(userInfo.flags) + "}";
+    }
+
     synchronized public void reloadInstalledModules() {
+        Log.d(App.TAG, "reloadInstalledModules: " + Thread.currentThread().getName());
         modulesLoaded = false;
         if (!ConfigManager.isBinderAlive()) {
             modulesLoaded = true;
@@ -131,6 +136,7 @@ public final class ModuleUtil {
 
         Map<Pair<String, Integer>, InstalledModule> modules = new HashMap<>();
         var users = ConfigManager.getUsers();
+        Log.d(App.TAG, "reloadInstalledModules: getting packages");
         for (PackageInfo pkg : ConfigManager.getInstalledPackagesFromAllUsers(PackageManager.GET_META_DATA | MATCH_ALL_FLAGS, false)) {
             ApplicationInfo app = pkg.applicationInfo;
 
@@ -141,7 +147,17 @@ public final class ModuleUtil {
         }
 
         installedModules = modules;
-
+        Log.d(App.TAG, "reloadInstalledModules: users=" + users);
+        if (users != null) {
+            var userInfo = new StringBuilder("[");
+            for (int i = 0; i < users.size(); i++) {
+                userInfo.append(userInfotoString(users.get(i)));
+                if (i != users.size() - 1) userInfo.append(", ");
+            }
+            Log.d(App.TAG, "userInfo=" + userInfo + "]");
+        } else {
+            Log.e(App.TAG, "reloadInstalledModules: users is null");
+        }
         this.users = users;
 
         enabledModules = new HashSet<>(Arrays.asList(ConfigManager.getEnabledModules()));
@@ -151,6 +167,7 @@ public final class ModuleUtil {
 
     @Nullable
     public List<UserInfo> getUsers() {
+        Log.d(App.TAG, "getUsers: modulesLoaded=" + modulesLoaded);
         return modulesLoaded ? users : null;
     }
 
@@ -375,11 +392,11 @@ public final class ModuleUtil {
                 //For historical reasons, legacy modules use the opposite name.
                 //https://github.com/rovo89/XposedBridge/commit/6b49688c929a7768f3113b4c65b429c7a7032afa
                 list.replaceAll(s ->
-                    switch (s) {
-                        case "android" -> "system";
-                        case "system" -> "android";
-                        default -> s;
-                    }
+                        switch (s) {
+                            case "android" -> "system";
+                            case "system" -> "android";
+                            default -> s;
+                        }
                 );
                 scopeList = list;
             }

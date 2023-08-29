@@ -135,7 +135,7 @@ public class LSPManagerService extends ILSPManagerService.Stub {
             var intent = PackageService.getLaunchIntentForPackage(BuildConfig.MANAGER_INJECTED_PKG_NAME);
             if (intent == null) {
                 var pkgInfo = PackageService.getPackageInfo(BuildConfig.MANAGER_INJECTED_PKG_NAME, PackageManager.GET_ACTIVITIES, 0);
-                if (pkgInfo != null && pkgInfo.activities != null && pkgInfo.activities.length > 0) {
+                if (pkgInfo != null && pkgInfo.activities != null) {
                     for (var activityInfo : pkgInfo.activities) {
                         if (activityInfo.processName.equals(activityInfo.packageName)) {
                             intent = new Intent();
@@ -356,11 +356,6 @@ public class LSPManagerService extends ILSPManagerService.Stub {
     }
 
     @Override
-    public IBinder asBinder() {
-        return this;
-    }
-
-    @Override
     public int getXposedApiVersion() {
         return IXposedService.API;
     }
@@ -479,6 +474,7 @@ public class LSPManagerService extends ILSPManagerService.Stub {
             var info = new UserInfo();
             info.id = user.id;
             info.name = user.name;
+            info.flags = user.flags;
             users.add(info);
         }
         return users;

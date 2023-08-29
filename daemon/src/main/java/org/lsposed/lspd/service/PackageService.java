@@ -143,14 +143,18 @@ public class PackageService {
         List<PackageInfo> res = new ArrayList<>();
         IPackageManager pm = getPackageManager();
         if (pm == null) return ParcelableListSlice.emptyList();
-        for (var user : UserService.getUsers()) {
+        var users = UserService.getUsers();
+        Log.d(TAG, "getInstalledPackagesFromAllUsers: users=" + users);
+        for (var user : users) {
             // in case pkginfo of other users in primary user
             ParceledListSlice<PackageInfo> infos;
+            Log.d(TAG, "getInstalledPackagesFromAllUsers: getting packages for user " + user.id);
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 infos = pm.getInstalledPackages((long) flags, user.id);
             } else {
                 infos = pm.getInstalledPackages(flags, user.id);
             }
+            Log.d(TAG, "getInstalledPackagesFromAllUsers: filtering packages for user " + user.id);
             res.addAll(infos
                     .getList().parallelStream()
                     .filter(info -> info.applicationInfo != null && info.applicationInfo.uid / PER_USER_RANGE == user.id)
@@ -158,12 +162,15 @@ public class PackageService {
                         try {
                             return isPackageAvailable(info.packageName, user.id, true);
                         } catch (RemoteException e) {
+                            Log.w(TAG, "isPackageAvailable: ", e);
                             return false;
                         }
                     })
                     .collect(Collectors.toList()));
+            Log.d(TAG, "getInstalledPackagesFromAllUsers: got " + res.size() + " packages for user " + user.id);
         }
         if (filterNoProcess) {
+            Log.d(TAG, "getInstalledPackagesFromAllUsers: filtering processes");
             return new ParcelableListSlice<>(res.parallelStream().filter(packageInfo -> {
                 try {
                     PackageInfo pkgInfo = getPackageInfoWithComponents(packageInfo.packageName, MATCH_ALL_FLAGS, packageInfo.applicationInfo.uid / PER_USER_RANGE);
@@ -174,6 +181,7 @@ public class PackageService {
                 }
             }).collect(Collectors.toList()));
         }
+        Log.d(TAG, "getInstalledPackagesFromAllUsers: returning");
         return new ParcelableListSlice<>(res);
     }
 

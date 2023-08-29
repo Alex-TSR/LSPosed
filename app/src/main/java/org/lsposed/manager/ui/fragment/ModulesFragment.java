@@ -36,6 +36,7 @@ import android.text.TextUtils;
 import android.text.style.ForegroundColorSpan;
 import android.text.style.StyleSpan;
 import android.text.style.TypefaceSpan;
+import android.util.Log;
 import android.util.SparseArray;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -109,6 +110,7 @@ public class ModulesFragment extends BaseFragment implements ModuleUtil.ModuleLi
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
+        Log.d(App.TAG, "onCreate: ModulesFragment");
         super.onCreate(savedInstanceState);
         searchListener = new SearchView.OnQueryTextListener() {
             @Override
@@ -147,6 +149,7 @@ public class ModulesFragment extends BaseFragment implements ModuleUtil.ModuleLi
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+        Log.d(App.TAG, "onCreateView: ModulesFragment");
         binding = FragmentPagerBinding.inflate(inflater, container, false);
         binding.appBar.setLiftable(true);
         setupToolbar(binding.toolbar, binding.clickView, R.string.Modules, R.menu.menu_modules);
@@ -234,8 +237,18 @@ public class ModulesFragment extends BaseFragment implements ModuleUtil.ModuleLi
     @Override
     public void onModulesReloaded() {
         var users = moduleUtil.getUsers();
-        if (users == null) return;
+        if (users == null) {
+            Log.e(App.TAG, "onModulesReloaded: users is null");
+            return;
+        }
 
+        Log.d(App.TAG, "onModulesReloaded: user(s) count=" + users.size());
+        var userInfo = new StringBuilder("[");
+        for (int i = 0; i < users.size(); i++) {
+            userInfo.append(moduleUtil.userInfotoString(users.get(i)));
+            if (i != users.size() - 1) userInfo.append(", ");
+        }
+        Log.d(App.TAG, "userInfo=" + userInfo + "]");
         if (users.size() != 1) {
             binding.viewPager.setUserInputEnabled(true);
             binding.tabLayout.setVisibility(View.VISIBLE);
@@ -278,6 +291,7 @@ public class ModulesFragment extends BaseFragment implements ModuleUtil.ModuleLi
     }
 
     void installModuleToUser(ModuleUtil.InstalledModule module, UserInfo user) {
+        if (user.name == null) return;
         new BlurBehindDialogBuilder(requireActivity(), R.style.ThemeOverlay_MaterialAlertDialog_Centered_FullWidthButtons)
                 .setTitle(getString(R.string.install_to_user, user.name))
                 .setMessage(getString(R.string.install_to_user_message, module.getAppName(), user.name))
@@ -626,7 +640,7 @@ public class ModulesFragment extends BaseFragment implements ModuleUtil.ModuleLi
                         menu.removeItem(R.id.menu_repo);
                     }
                     if (item.userId == 0) {
-                        var users = ConfigManager.getUsers();
+                        var users = moduleUtil.getUsers();
                         if (users != null) {
                             for (var user : users) {
                                 if (moduleUtil.getModule(item.packageName, user.id) == null) {

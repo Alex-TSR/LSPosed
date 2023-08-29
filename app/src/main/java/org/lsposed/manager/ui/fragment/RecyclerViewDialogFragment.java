@@ -43,10 +43,9 @@ public class RecyclerViewDialogFragment extends AppCompatDialogFragment {
     public Dialog onCreateDialog(Bundle savedInstanceState) {
         var parent = getParentFragment();
         var arguments = getArguments();
-        if (!(parent instanceof ModulesFragment) || arguments == null) {
+        if (!(parent instanceof ModulesFragment modulesFragment) || arguments == null) {
             throw new IllegalStateException();
         }
-        var modulesFragment = (ModulesFragment) parent;
         var user = (UserInfo) arguments.getParcelable("userInfo");
 
         var pickAdaptor = modulesFragment.createPickModuleAdapter(user);
@@ -64,18 +63,20 @@ public class RecyclerViewDialogFragment extends AppCompatDialogFragment {
         binding.swipeRefreshLayout.setOnRefreshListener(pickAdaptor::fullRefresh);
         pickAdaptor.refresh();
         var title = DialogTitleBinding.inflate(getLayoutInflater()).getRoot();
-        title.setText(getString(R.string.install_to_user, user.name));
+        title.setText(getString(R.string.install_to_user, user != null ? user.name : "0"));
         var dialog = new BlurBehindDialogBuilder(requireActivity(), R.style.ThemeOverlay_MaterialAlertDialog_FullWidthButtons)
                 .setCustomTitle(title)
                 .setView(binding.getRoot())
                 .setNegativeButton(android.R.string.cancel, null)
                 .create();
         title.setOnClickListener(s -> binding.recyclerView.smoothScrollToPosition(0));
-        pickAdaptor.setOnPickListener(picked -> {
-            var module = (ModuleUtil.InstalledModule) picked.getTag();
-            modulesFragment.installModuleToUser(module, user);
-            dialog.dismiss();
-        });
+        if (user != null) {
+            pickAdaptor.setOnPickListener(picked -> {
+                var module = (ModuleUtil.InstalledModule) picked.getTag();
+                modulesFragment.installModuleToUser(module, user);
+                dialog.dismiss();
+            });
+        }
         onViewCreated(binding.getRoot(), savedInstanceState);
         return dialog;
     }
